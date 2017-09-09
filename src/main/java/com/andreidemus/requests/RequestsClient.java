@@ -10,9 +10,15 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+
 public class RequestsClient {
+    public static final String CONTENT_TYPE = "Content-Type";
+    public static final String CONTENT_LENGTH = "Content-Length";
+    public static final String USER_AGENT = "User-Agent";
 
     private static final Pattern CHARSET_PATTERN = Pattern.compile("charset=([_\\-0-9a-zA-Z]+)(;|$)");
+    private static final String DEFAULT_USER_AGENT = "Java-Requests/0.0.1";
 
     public Response get(Request request) {
         return process("GET", request);
@@ -60,20 +66,23 @@ public class RequestsClient {
         request.headers().forEach((key, vals) -> {
             vals.forEach(val -> conn.addRequestProperty(key, val));
         });
+        if (!request.headers().containsKey(USER_AGENT)) {
+            conn.addRequestProperty(USER_AGENT, DEFAULT_USER_AGENT);
+        }
 
         if (request.hasBody()) {
-            if (!request.headers().containsKey("Content-Type")) {
-                conn.addRequestProperty("Content-Type", "text/plain; " + request.charset().name());
+            if (!request.headers().containsKey(CONTENT_TYPE)) {
+                conn.addRequestProperty(CONTENT_TYPE, "text/plain; " + request.charset().name());
             }
             final byte[] bytes = request.body();
-            conn.addRequestProperty("Content-Length", String.valueOf(bytes.length));
+            conn.addRequestProperty(CONTENT_LENGTH, String.valueOf(bytes.length));
             writeRequestBody(conn, bytes);
         } else if (request.hasFormParams()) {
-            if (!request.headers().containsKey("Content-Type")) {
-                conn.addRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            if (!request.headers().containsKey(CONTENT_TYPE)) {
+                conn.addRequestProperty(CONTENT_TYPE, "application/x-www-form-urlencoded");
             }
             final byte[] bytes = request.formParamsAsString().getBytes(request.charset());
-            conn.addRequestProperty("Content-Length", String.valueOf(bytes.length));
+            conn.addRequestProperty(CONTENT_LENGTH, String.valueOf(bytes.length));
             writeRequestBody(conn, bytes);
         }
 
@@ -99,7 +108,7 @@ public class RequestsClient {
             .filter(it -> it.getKey() != null && it.getValue() != null && !it.getValue().isEmpty())
             .forEach(it -> response.headers.put(it.getKey(), it.getValue()));
 
-        response.charset = Optional.ofNullable(response.headers.get("Content-Type"))
+        response.charset = Optional.ofNullable(response.headers.get(CONTENT_TYPE))
                                    .flatMap(this::parseCharset)
                                    .orElse(StandardCharsets.UTF_8);
         response.body = readBody(conn);
@@ -122,7 +131,7 @@ public class RequestsClient {
 
     private InputStream getInputStream(HttpURLConnection conn) {
         try {
-            if (conn.getResponseCode() < 400) {
+            if (conn.getResponseCode() < HTTP_BAD_REQUEST) {
                 return conn.getInputStream();
             } else {
                 return conn.getErrorStream();

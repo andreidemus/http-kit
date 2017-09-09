@@ -200,4 +200,34 @@ public class RequestConstructingTest extends RequestsTest {
 
         assertThat(request.toString(), is(expectedOutput));
     }
+
+    @Test
+    public void testUserAgent() throws Exception {
+        final String path = "/test-user-agent";
+
+        Request r = new Request(getUrl(path)).header("User-Agent", "Custom User Agent");
+        Requests.get(r);
+
+        server.getCalls().forEach(it -> System.out.println(it.getHeaders()));
+
+        verifyHttp(server).once(
+                method(Method.GET),
+                uri(path),
+                withHeader("User-Agent", "Custom User Agent")
+        );
+    }
+
+    @Test
+    public void testDefaultUserAgent() throws Exception {
+        final String path = "/test-default-user-agent";
+
+        Requests.get(getUrl(path));
+
+        verifyHttp(server).once(
+                method(Method.GET),
+                uri(path),
+                withHeader("User-Agent", "Java-Requests/0.0.1")
+        );
+    }
+
 }
