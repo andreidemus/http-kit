@@ -1,4 +1,4 @@
-package com.andreidemus.requests;
+package com.andreidemus.http.requests;
 
 import java.io.*;
 import java.net.HttpURLConnection;

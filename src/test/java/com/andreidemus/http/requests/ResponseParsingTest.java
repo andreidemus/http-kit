@@ -1,4 +1,4 @@
-package com.andreidemus.requests;
+package com.andreidemus.http.requests;
 
 import org.glassfish.grizzly.http.Method;
 import org.glassfish.grizzly.http.util.HttpStatus;

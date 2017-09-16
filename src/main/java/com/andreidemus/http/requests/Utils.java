@@ -1,4 +1,4 @@
-package com.andreidemus.requests;
+package com.andreidemus.http.requests;
 
 import java.util.Map;
 import java.util.stream.Collectors;

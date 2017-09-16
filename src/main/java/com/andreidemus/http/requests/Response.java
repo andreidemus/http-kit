@@ -1,9 +1,9 @@
-package com.andreidemus.requests;
+package com.andreidemus.http.requests;
 
 import java.nio.charset.Charset;
 import java.util.*;
 
-import static com.andreidemus.requests.Utils.prettyPrintMap;
+import static com.andreidemus.http.requests.Utils.prettyPrintMap;
 
 public class Response {
     int status;

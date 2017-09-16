@@ -1,4 +1,4 @@
-package com.andreidemus.requests;
+package com.andreidemus.http.requests;
 
 import com.xebialabs.restito.server.StubServer;
 import org.junit.After;
