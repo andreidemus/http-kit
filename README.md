@@ -1,13 +1,15 @@
-# Requests
+# HTTP Kit
+
+Contains:
+- Requests (a very basic Java HTTP client for humans, inspired by Python's [Requests](http://docs.python-requests.org/en/master/) library.)
+
+## Requests
 
 
-Requests is a very basic Java HTTP client for humans, inspired by Python's [Requests](http://docs.python-requests.org/en/master/) library.
+### Usage
 
 
-## Usage
-
-
-### Example 1
+#### Example 1
 ```java
 final String responseBody = Requests.get("https://api.github.com/zen").text();
 System.out.println(responseBody);
@@ -16,7 +18,7 @@ System.out.println(responseBody);
 > Speak like a human.
 ```
 
-### Example 2
+#### Example 2
 ```java
 final Request request = new Request("http://httpbin.org").path("post")
                                                          .header("Content-Type", "application/json")
