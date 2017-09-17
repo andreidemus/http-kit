@@ -1,8 +1,8 @@
-package com.andreidemus.http.responses;
+package com.andreidemus.http.server;
 
-import com.andreidemus.http.requests.Request;
-import com.andreidemus.http.requests.Requests;
-import com.andreidemus.http.requests.Response;
+import com.andreidemus.http.common.Request;
+import com.andreidemus.http.client.Requests;
+import com.andreidemus.http.common.Response;
 import org.junit.Test;
 
 import java.util.Queue;

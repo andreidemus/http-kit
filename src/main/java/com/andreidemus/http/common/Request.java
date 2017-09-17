@@ -1,4 +1,4 @@
-package com.andreidemus.http.requests;
+package com.andreidemus.http.common;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.andreidemus.http.requests.Utils.prettyPrintMap;
+import static com.andreidemus.http.common.Utils.prettyPrintMap;
 
 public class Request {
     private static final String PATH_DELIMITER = "/";

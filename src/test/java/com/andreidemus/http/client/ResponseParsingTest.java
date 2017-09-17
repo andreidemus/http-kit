@@ -1,5 +1,6 @@
-package com.andreidemus.http.requests;
+package com.andreidemus.http.client;
 
+import com.andreidemus.http.common.Response;
 import org.glassfish.grizzly.http.Method;
 import org.glassfish.grizzly.http.util.HttpStatus;
 import org.junit.Test;

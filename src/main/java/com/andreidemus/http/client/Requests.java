@@ -1,4 +1,7 @@
-package com.andreidemus.http.requests;
+package com.andreidemus.http.client;
+
+import com.andreidemus.http.common.Request;
+import com.andreidemus.http.common.Response;
 
 public class Requests {
     private static RequestsClient requests = new RequestsClient(); // TODO lazy singleton

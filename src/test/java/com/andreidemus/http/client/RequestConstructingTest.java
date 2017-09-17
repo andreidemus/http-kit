@@ -1,5 +1,6 @@
-package com.andreidemus.http.requests;
+package com.andreidemus.http.client;
 
+import com.andreidemus.http.common.Request;
 import com.xebialabs.restito.semantics.Condition;
 import org.glassfish.grizzly.http.Method;
 import org.junit.Test;

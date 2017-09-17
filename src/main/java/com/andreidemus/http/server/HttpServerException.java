@@ -1,4 +1,4 @@
-package com.andreidemus.http.responses;
+package com.andreidemus.http.server;
 
 public class HttpServerException extends RuntimeException {
     public HttpServerException() {

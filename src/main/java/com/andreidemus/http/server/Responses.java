@@ -1,4 +1,4 @@
-package com.andreidemus.http.responses;
+package com.andreidemus.http.server;
 
 import java.io.*;
 import java.net.ServerSocket;

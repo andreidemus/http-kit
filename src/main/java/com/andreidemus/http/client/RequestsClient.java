@@ -1,14 +1,11 @@
-package com.andreidemus.http.requests;
+package com.andreidemus.http.client;
+
+import com.andreidemus.http.common.Request;
+import com.andreidemus.http.common.Response;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 
@@ -17,7 +14,6 @@ public class RequestsClient {
     public static final String CONTENT_LENGTH = "Content-Length";
     public static final String USER_AGENT = "User-Agent";
 
-    private static final Pattern CHARSET_PATTERN = Pattern.compile("charset=([_\\-0-9a-zA-Z]+)(;|$)");
     private static final String DEFAULT_USER_AGENT = "Java-Requests/0.0.1";
 
     public Response get(Request request) {
@@ -98,22 +94,11 @@ public class RequestsClient {
     }
 
     private Response parseResponse(HttpURLConnection conn) throws IOException {
-        final Response response = new Response();
-        response.status = conn.getResponseCode();
-        response.reason = conn.getResponseMessage();
+        final int status = conn.getResponseCode();
+        final String reason = conn.getResponseMessage();
+        final byte[] body = readBody(conn);
 
-        conn.getHeaderFields()
-            .entrySet()
-            .stream()
-            .filter(it -> it.getKey() != null && it.getValue() != null && !it.getValue().isEmpty())
-            .forEach(it -> response.headers.put(it.getKey(), it.getValue()));
-
-        response.charset = Optional.ofNullable(response.headers.get(CONTENT_TYPE))
-                                   .flatMap(this::parseCharset)
-                                   .orElse(StandardCharsets.UTF_8);
-        response.body = readBody(conn);
-
-        return response;
+        return new Response(status, reason, body, conn.getHeaderFields());
     }
 
     private byte[] readBody(HttpURLConnection conn) {
@@ -139,25 +124,5 @@ public class RequestsClient {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    Optional<Charset> parseCharset(List<String> headerValues) {
-        return headerValues.stream()
-                           .map(this::parseCharset)
-                           .filter(Optional::isPresent)
-                           .map(Optional::get)
-                           .findFirst();
-    }
-
-    Optional<Charset> parseCharset(String contentType) {
-        try {
-            final Matcher m = CHARSET_PATTERN.matcher(contentType);
-            if (m.find()) {
-                return Optional.of(Charset.forName(m.group(1)));
-            }
-        } catch (Exception e) {
-            return Optional.empty();
-        }
-        return Optional.empty();
     }
 }

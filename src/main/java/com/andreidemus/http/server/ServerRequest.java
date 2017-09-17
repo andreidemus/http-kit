@@ -1,4 +1,4 @@
-package com.andreidemus.http.responses;
+package com.andreidemus.http.server;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
