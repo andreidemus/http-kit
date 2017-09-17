@@ -17,30 +17,30 @@ public class RequestsClient {
     private static final String DEFAULT_USER_AGENT = "Java-Requests/0.0.1";
 
     public Response get(Request request) {
-        return process("GET", request);
+        return send(request.method("GET"));
     }
 
     public Response post(Request request) {
-        return process("POST", request);
+        return send(request.method("POST"));
     }
 
     public Response put(Request request) {
-        return process("PUT", request);
+        return send(request.method("PUT"));
     }
 
     public Response delete(Request request) {
-        return process("DELETE", request);
+        return send(request.method("DELETE"));
     }
 
     public Response head(Request request) {
-        return process("HEAD", request);
+        return send(request.method("HEAD"));
     }
 
     //TODO CONNECT, OPTIONS, TRACE, PATCH
 
-    private Response process(String method, Request request) {
+    public Response send(Request request) {
         try {
-            final HttpURLConnection conn = constructRequest(method, request);
+            final HttpURLConnection conn = constructRequest(request);
             final Response response = parseResponse(conn);
             conn.disconnect();
             return response;
@@ -49,15 +49,15 @@ public class RequestsClient {
         }
     }
 
-    private HttpURLConnection constructRequest(String method, Request request) throws IOException {
-        String urlStr = request.url();
+    private HttpURLConnection constructRequest(Request request) throws IOException {
+        String urlStr = request.url() + request.path();
         if (request.hasPathParams()) {
             urlStr += "?" + request.pathParamsAsString();
         }
         final URL url = new URL(urlStr);
         final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-        conn.setRequestMethod(method);
+        conn.setRequestMethod(request.method());
 
         request.headers().forEach((key, vals) -> {
             vals.forEach(val -> conn.addRequestProperty(key, val));

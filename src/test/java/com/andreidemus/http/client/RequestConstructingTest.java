@@ -170,6 +170,8 @@ public class RequestConstructingTest extends RequestsTest {
                                                          .body("request body")
                                                          .formParam("param2", 2)
                                                          .header("Content-Type", "text/plain");
+
+        System.out.println(request);
         Requests.post(request);
 
         verifyHttp(server).once(
@@ -231,4 +233,17 @@ public class RequestConstructingTest extends RequestsTest {
         );
     }
 
+    @Test
+    public void testPath() throws Exception {
+        Request r = new Request(getUrl("")).path("test")
+                                           .path("composite")
+                                           .path("path");
+        Requests.get(r);
+
+        verifyHttp(server).once(
+                method(Method.GET),
+                uri("/test/composite/path"),
+                withHeader("User-Agent", "Java-Requests/0.0.1")
+        );
+    }
 }

@@ -91,8 +91,8 @@ public class Responses {
         try {
             final String startLine = readStartLine(in);
             final String[] parsedStartLine = parseStartLine(startLine);
-//            final String method = parsedStartLine[0]; // TODO add field to Request
-            final String url = parsedStartLine[1]; // TODO this is path, not url
+            final String method = parsedStartLine[0];
+            final String path = parsedStartLine[1];
 //            final String protocol = parsedStartLine[2]; // TODO add field to Request
 
             final List<String> unparsedHeaders = readHeaders(in);
@@ -110,7 +110,7 @@ public class Responses {
             } else {
                 body = new byte[]{};
             }
-            return new Request(url, headers, body);
+            return new Request(method, "", path, headers, body);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

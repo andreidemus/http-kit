@@ -32,8 +32,8 @@ public class ResponsesTest {
         final Request serverRequest1 = requests.poll();
         final Request serverRequest2 = requests.poll();
 
-//        assertThat(serverRequest1.method(), is("POST"));
-        assertThat(serverRequest1.url(), is("/some_path"));
+        assertThat(serverRequest1.method(), is("POST"));
+        assertThat(serverRequest1.path(), is("/some_path"));
         assertThat(serverRequest1.bodyAsString(), is("Some request body"));
         assertThat(serverRequest1.headers().get("test HeaDer"), hasItem("test header value"));
 

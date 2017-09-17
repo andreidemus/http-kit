@@ -13,20 +13,26 @@ import static com.andreidemus.http.common.Utils.prettyPrintMap;
 public class Request {
     private static final String PATH_DELIMITER = "/";
 
+    private final String method;
     private final String url;
+    private final String path;
     private final byte[] body;
     private final Map<String, Set<Object>> pathParams;
     private final Map<String, Set<Object>> formParams;
     private final Map<String, Set<String>> headers;
     private final Charset charset;
 
-    private Request(String url,
+    private Request(String method,
+                    String url,
+                    String path,
                     byte[] body,
                     Map<String, Set<Object>> pathParams,
                     Map<String, Set<Object>> formParams,
                     Map<String, Set<String>> headers,
                     Charset charset) {
+        this.method = method;
         this.url = url;
+        this.path = path;
         this.body = body;
         this.pathParams = pathParams;
         this.formParams = formParams;
@@ -36,7 +42,9 @@ public class Request {
 
     public Request(String url) {
         this(
+                "GET",
                 url,
+                "",
                 new byte[]{},
                 new LinkedHashMap<>(),
                 new LinkedHashMap<>(),
@@ -45,10 +53,14 @@ public class Request {
         );
     }
 
-    public Request(String url,
+    public Request(String method,
+                   String url,
+                   String path,
                    Map<String, Set<String>> headers,
                    byte[] body) {
+        this.method = method;
         this.url = url;
+        this.path = path;
         this.body = body;
         this.pathParams = new LinkedHashMap<>();
         this.formParams = new LinkedHashMap<>();
@@ -64,8 +76,20 @@ public class Request {
         return url;
     }
 
+    public String method() {
+        return method;
+    }
+
+    public Request method(String method) {
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
+    }
+
     public Request path(String path) {
-        return new Request(url + PATH_DELIMITER + urlEncode(path), body, pathParams, formParams, headers, charset);
+        return new Request(method, url, this.path + PATH_DELIMITER + urlEncode(path), body, pathParams, formParams, headers, charset);
+    }
+
+    public String path() {
+        return path;
     }
 
     public Request formParam(String name, Object value) {
@@ -81,7 +105,7 @@ public class Request {
         vals.add(value);
         formParams.put(name, vals);
 
-        return new Request(url, body, pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
     }
 
     public Request formParam(String name, Set<Object> values) {
@@ -92,7 +116,7 @@ public class Request {
         formParams.putAll(this.formParams);
         formParams.put(name, values);
 
-        return new Request(url, body, pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
     }
 
     public Request formParams(Map<String, Set<Object>> formParams) {
@@ -100,7 +124,7 @@ public class Request {
                                .stream()
                                .filter(it -> it.getValue() != null && !it.getValue().isEmpty())
                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new Request(url, body, pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
     }
 
     public boolean hasFormParams() {
@@ -128,7 +152,7 @@ public class Request {
         vals.add(value);
         pathParams.put(name, vals);
 
-        return new Request(url, body, pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
     }
 
     public Request pathParam(String name, Set<Object> values) {
@@ -139,7 +163,7 @@ public class Request {
         pathParams.putAll(this.pathParams);
         pathParams.put(name, values);
 
-        return new Request(url, body, pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
     }
 
     public Request pathParams(Map<String, Set<Object>> pathParams) {
@@ -147,7 +171,7 @@ public class Request {
                                .stream()
                                .filter(it -> it.getValue() != null && !it.getValue().isEmpty())
                                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new Request(url, body, pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
     }
 
     public boolean hasPathParams() {
@@ -169,7 +193,7 @@ public class Request {
                .filter(it -> it.getValue() != null && !it.getValue().isEmpty())
                .forEach(it -> newHeaders.put(it.getKey(), it.getValue()));
 
-        return new Request(url, body, pathParams, formParams, newHeaders, charset);
+        return new Request(method, url, path, body, pathParams, formParams, newHeaders, charset);
     }
 
     public Request header(String name, String value) {
@@ -185,7 +209,7 @@ public class Request {
         vals.add(value);
         headers.putIfAbsent(name, vals);
 
-        return new Request(url, body, pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
     }
 
     public Map<String, Set<String>> headers() {
@@ -200,21 +224,21 @@ public class Request {
         if (body == null) {
             return this;
         }
-        return new Request(url, body, pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
     }
 
     public Request body(byte[] body, Charset charset) {
         if (body == null) {
             return this;
         }
-        return new Request(url, body, pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
     }
 
     public Request body(String body) {
         if (body == null) {
             return this;
         }
-        return new Request(url, body.getBytes(charset), pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body.getBytes(charset), pathParams, formParams, headers, charset);
     }
 
     public byte[] body() {
@@ -230,14 +254,15 @@ public class Request {
     }
 
     public Request charset(Charset charset) {
-        return new Request(url, body, pathParams, formParams, headers, charset);
+        return new Request(method, url, path, body, pathParams, formParams, headers, charset);
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append("URL: ")
-          .append(url());
+          .append(url())
+          .append(path());
         if (hasPathParams()) {
             sb.append("?")
               .append(pathParamsAsString());
