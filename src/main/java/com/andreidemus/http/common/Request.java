@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import static com.andreidemus.http.common.Utils.prettyPrintMap;
 
+// TODO improve immutability
 public class Request {
     private static final String PATH_DELIMITER = "/";
 
@@ -42,6 +43,21 @@ public class Request {
                 newHeaders(),
                 StandardCharsets.UTF_8
         );
+    }
+
+    public Request(String url,
+                   Map<String, Set<String>> headers,
+                   byte[] body) {
+        this.url = url;
+        this.body = body;
+        this.pathParams = new LinkedHashMap<>();
+        this.formParams = new LinkedHashMap<>();
+        this.headers = newHeaders();
+        headers.entrySet()
+               .stream()
+               .filter(it -> it.getValue() != null && !it.getValue().isEmpty())
+               .forEach(it -> this.headers.put(it.getKey(), it.getValue()));
+        this.charset = StandardCharsets.UTF_8; // TODO get from headers
     }
 
     public String url() {

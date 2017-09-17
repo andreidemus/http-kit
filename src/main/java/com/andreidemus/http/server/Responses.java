@@ -1,5 +1,7 @@
 package com.andreidemus.http.server;
 
+import com.andreidemus.http.common.Request;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,7 +18,7 @@ public class Responses {
     private final ExecutorService requestsExecutor;
     private final ExecutorService mainExecutor;
     private final AtomicInteger count = new AtomicInteger();
-    private final List<ServerRequest> requests = Collections.synchronizedList(new LinkedList<>());
+    private final List<Request> requests = Collections.synchronizedList(new LinkedList<>());
     private String stubbedResponse = "HTTP/1.1 200 OK\n" +
             "Server: Http Debug\n" +
             "Content-Type: text/plain; charset=utf-8\n" +
@@ -56,8 +58,8 @@ public class Responses {
         throw new RuntimeException("Not implemented."); // TODO implement
     }
 
-    public Queue<ServerRequest> getRequests() {
-        final Queue<ServerRequest> requests = new LinkedList<>();
+    public Queue<Request> getRequests() {
+        final Queue<Request> requests = new LinkedList<>();
         requests.addAll(this.requests);
         return requests;
     }
@@ -70,7 +72,7 @@ public class Responses {
         requestsExecutor.execute(() -> {
             try {
                 System.out.println("Connection #" + count.addAndGet(1));
-                final ServerRequest request = readRequest(connection.getInputStream());
+                final Request request = readRequest(connection.getInputStream());
                 requests.add(request);
                 dumpRequest(request);
 
@@ -85,20 +87,18 @@ public class Responses {
         });
     }
 
-    private ServerRequest readRequest(InputStream in) {
-        final ServerRequest request = new ServerRequest();
+    private Request readRequest(InputStream in) {
         try {
             final String startLine = readStartLine(in);
             final String[] parsedStartLine = parseStartLine(startLine);
-            request.rawStartLine = startLine;
-            request.method = parsedStartLine[0];
-            request.url = parsedStartLine[1];
-            request.protocol = parsedStartLine[2];
+//            final String method = parsedStartLine[0]; // TODO add field to Request
+            final String url = parsedStartLine[1]; // TODO this is path, not url
+//            final String protocol = parsedStartLine[2]; // TODO add field to Request
 
-            final List<String> headers = readHeaders(in);
-            request.rawHeaders = String.join("\n", headers);
-            request.headers = parseHeaders(headers);
+            final List<String> unparsedHeaders = readHeaders(in);
+            final Map<String, Set<String>> headers = parseHeaders(unparsedHeaders);
 
+            final byte[] body;
             int available = in.available();
             if (available > 0) {
                 byte[] bytes = new byte[available];
@@ -106,12 +106,14 @@ public class Responses {
                 if (actuallyRead != available) {
                     throw new IOException("Request body was not read completely.");
                 }
-                request.body = bytes;
+                body = bytes;
+            } else {
+                body = new byte[]{};
             }
+            return new Request(url, headers, body);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        return request;
     }
 
     private String readStartLine(InputStream in) throws IOException {
@@ -161,15 +163,15 @@ public class Responses {
         return headers;
     }
 
-    private Map<String, List<String>> parseHeaders(List<String> headers) {
+    private Map<String, Set<String>> parseHeaders(List<String> headers) {
         return headers.stream()
                       .map(it -> it.split(":"))
                       .filter(it -> it.length == 2)
                       .collect(Collectors.toMap(
                               it -> it[0],
-                              it -> singletonList(it[1].trim()),
+                              it -> new HashSet<>(singletonList(it[1].trim())),
                               (a, b) -> { // TODO improve performance
-                                  List<String> result = new LinkedList<>();
+                                  Set<String> result = new HashSet<>();
                                   result.addAll(a);
                                   result.addAll(b);
                                   return result;
@@ -178,7 +180,7 @@ public class Responses {
                       ));
     }
 
-    private void dumpRequest(ServerRequest request) { // TODO use logger
+    private void dumpRequest(Request request) { // TODO use logger
         System.out.println(request.toString() + "\n");
         System.out.flush();
     }
