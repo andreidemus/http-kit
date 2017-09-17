@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
@@ -19,12 +20,13 @@ public class Responses {
     private final ExecutorService mainExecutor;
     private final AtomicInteger count = new AtomicInteger();
     private final List<Request> requests = Collections.synchronizedList(new LinkedList<>());
-    private String stubbedResponse = "HTTP/1.1 200 OK\n" +
-            "Server: Http Debug\n" +
+    private volatile AtomicReference<String> stubbedResponse = new AtomicReference<>("HTTP/1.1 200 OK\n" +
+            "Server: Http Debug1\n" +
             "Content-Type: text/plain; charset=utf-8\n" +
             "Content-Length: 21\n" +
             "\n" +
-            "This is response body";
+            "This is response body");
+    private int port;
 
     public Responses() {
         numThreads = 5;
@@ -50,7 +52,9 @@ public class Responses {
             }
         });
 
-        return socket.getLocalPort();
+        this.port = socket.getLocalPort();
+
+        return this.port;
     }
 
 
@@ -58,26 +62,30 @@ public class Responses {
         throw new RuntimeException("Not implemented."); // TODO implement
     }
 
-    public Queue<Request> getRequests() {
+    public Queue<Request> requests() {
         final Queue<Request> requests = new LinkedList<>();
         requests.addAll(this.requests);
         return requests;
     }
 
-    public void stubResponse(String stubbedResponse) {
-        this.stubbedResponse = stubbedResponse;
+    public void stubResponse(String newStubbedResponse) {
+        this.stubbedResponse.set(newStubbedResponse);
+    }
+
+    public int port() {
+        return port;
     }
 
     private void handleConnection(Socket connection) {
         requestsExecutor.execute(() -> {
             try {
-                System.out.println("Connection #" + count.addAndGet(1));
+                System.out.println(port + " : Connection #" + count.addAndGet(1));
                 final Request request = readRequest(connection.getInputStream());
                 requests.add(request);
                 dumpRequest(request);
 
                 OutputStream out = connection.getOutputStream();
-                out.write(stubbedResponse.getBytes());
+                out.write(stubbedResponse.get().getBytes());
                 out.flush();
 
                 connection.close();
@@ -168,7 +176,7 @@ public class Responses {
                       .map(it -> it.split(":"))
                       .filter(it -> it.length == 2)
                       .collect(Collectors.toMap(
-                              it -> it[0],
+                              it -> it[0].trim(),
                               it -> new HashSet<>(singletonList(it[1].trim())),
                               (a, b) -> { // TODO improve performance
                                   Set<String> result = new HashSet<>();

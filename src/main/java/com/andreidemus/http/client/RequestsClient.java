@@ -98,6 +98,8 @@ public class RequestsClient {
         final String reason = conn.getResponseMessage();
         final byte[] body = readBody(conn);
 
+        //conn.getHeaderFields() returns incorrect headers ("Header : value" lines are not parsed correctly)
+        //TODO replace HttpURLConnection
         return new Response(status, reason, body, conn.getHeaderFields());
     }
 

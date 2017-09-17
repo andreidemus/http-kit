@@ -1,23 +1,18 @@
 package com.andreidemus.http.client;
 
-import com.xebialabs.restito.server.StubServer;
-import org.junit.After;
+import com.andreidemus.http.server.Responses;
 import org.junit.Before;
 
 public abstract class RequestsTest {
-    StubServer server;
+    Responses server;
 
     @Before
     public void setUp() throws Exception {
-        server = new StubServer().run();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        server.stop();
+        server = new Responses();
+        server.start();
     }
 
     String getUrl(String path) {
-        return "http://127.0.0.1:" + server.getPort() + path;
+        return "http://127.0.0.1:" + server.port() + path;
     }
 }

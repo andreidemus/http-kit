@@ -26,7 +26,7 @@ public class ResponsesTest {
         Requests.post(request1);
         Requests.post(request2);
 
-        final Queue<Request> requests = server.getRequests();
+        final Queue<Request> requests = server.requests();
         assertThat(requests, hasSize(2));
 
         final Request serverRequest1 = requests.poll();
@@ -43,7 +43,6 @@ public class ResponsesTest {
     @Test
     public void testStubbingResponse() throws Exception {
         final Responses server = new Responses();
-        final int port = server.start();
         server.stubResponse(
                 "HTTP/1.1 200 OK\n" +
                         "Server: Http Debug stubbed\n" +
@@ -52,8 +51,10 @@ public class ResponsesTest {
                         "\n" +
                         "Stubbed response body"
         );
+        final int port = server.start();
 
         final Response r = Requests.get("http://127.0.0.1:" + port);
+
         assertThat(r.status(), is(200));
         assertThat(r.reason(), is("OK"));
         assertThat(r.header("Server"), hasItem("Http Debug stubbed"));

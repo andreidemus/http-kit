@@ -1,17 +1,17 @@
 package com.andreidemus.http.client;
 
 import com.andreidemus.http.common.Request;
-import com.xebialabs.restito.semantics.Condition;
-import org.glassfish.grizzly.http.Method;
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import java.util.*;
 
-import static com.xebialabs.restito.builder.verify.VerifyHttp.verifyHttp;
-import static com.xebialabs.restito.semantics.Condition.*;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.core.Is.is;
 
 public class RequestConstructingTest extends RequestsTest {
@@ -34,14 +34,17 @@ public class RequestConstructingTest extends RequestsTest {
 
         Requests.get(req2);
 
-        verifyHttp(server).times(
-                2,
-                method(Method.GET),
-                uri(path),
-                withMultiHeader("header1", "val1-1", "val1-2"),
-                withHeader("header2", "val2"),
-                Condition.not(withHeader("header0"))
-        );
+        final Request request1 = server.requests().poll();
+
+        assertThat(request1.headers(), hasEntry(is("header1"), contains("val1-1", "val1-2")));
+        assertThat(request1.headers(), hasEntry(is("header2"), contains("val2")));
+        assertThat(request1.path(), is(path));
+
+        final Request request2 = server.requests().poll();
+        assertThat(request2.headers(), hasEntry(is("header1"), contains("val1-1", "val1-2")));
+        assertThat(request2.headers(), hasEntry(is("header2"), contains("val2")));
+        assertThat(request2.headers(), CoreMatchers.not(hasKey("header3")));
+        assertThat(request2.path(), is(path));
     }
 
     @Test
@@ -51,8 +54,7 @@ public class RequestConstructingTest extends RequestsTest {
         final String url = getUrl(path);
         final Request req1 = new Request(url).formParam("param1", 1)
                                              .formParam("param1", 2)
-                                             .formParam("param2", "val2")
-                                             .header("Content-Type", "text/plain"); // hack restito
+                                             .formParam("param2", "val2");
         new RequestsClient().post(req1);
 
         // test reset params by single method
@@ -62,19 +64,17 @@ public class RequestConstructingTest extends RequestsTest {
         params2.put("param3", new LinkedHashSet<>());
         params2.put("param4", null);
         final Request req2 = new Request(url).formParam("param5", "val2")
-                                             .formParams(params2)
-                                             .header("Content-Type", "text/plain"); // hack restito
+                                             .formParams(params2);
 
         Requests.post(req2);
 
-        server.getCalls().forEach(it -> System.out.println(it.getPostBody()));
+        final Request request1 = server.requests().poll();
+        assertThat(request1.method(), is("POST"));
+        assertThat(request1.bodyAsString(), is("param1=1&param1=2&param2=val2"));
 
-        verifyHttp(server).times(
-                2,
-                method(Method.POST),
-                uri(path),
-                withPostBodyContaining("param1=1&param1=2&param2=val2")
-        );
+        final Request request2 = server.requests().poll();
+        assertThat(request2.method(), is("POST"));
+        assertThat(request2.bodyAsString(), is("param1=1&param1=2&param2=val2"));
     }
 
     @Test
@@ -97,88 +97,71 @@ public class RequestConstructingTest extends RequestsTest {
 
         Requests.post(req2);
 
-        verifyHttp(server).times(
-                2,
-                method(Method.POST),
-                uri(path),
-                parameter("param1", "1", "2"),
-                parameter("param2", "val2"),
-                not(hasParameter("param3")),
-                not(hasParameter("param4"))
-        );
+        final Request request1 = server.requests().poll();
+        assertThat(request1.path(), is("/test-path-params?param1=1&param1=2&param2=val2"));
+
+        final Request request2 = server.requests().poll();
+        assertThat(request2.path(), is("/test-path-params?param1=1&param1=2&param2=val2"));
     }
 
     @Test
     public void testRequestBody() throws Exception {
         final String path = "/test-request-body";
 
-        final Request request = new Request(getUrl(path))
+        final Request req = new Request(getUrl(path))
                 .header("Content-Type", "text/html")
                 .body("request body");
 
-        Requests.post(request);
+        Requests.post(req);
 
-        verifyHttp(server).once(
-                method(Method.POST),
-                uri(path),
-                withHeader("Content-Type", "text/html"),
-                withPostBodyContaining("request body")
-        );
+        final Request request = server.requests().poll();
+        assertThat(request.headers(), hasEntry(is("Content-Type"), contains("text/html")));
+        assertThat(request.bodyAsString(), is("request body"));
     }
 
     @Test
     public void testDefaultContentTypeForTextBody() throws Exception {
         final String path = "/test-request-body";
 
-        final Request request = new Request(getUrl(path)).body("request body");
+        final Request req = new Request(getUrl(path)).body("request body");
 
-        Requests.post(request);
+        Requests.post(req);
 
-        server.getCalls().forEach(it -> System.out.println(it.getHeaders() + "\n" + it.getParameters()));
-
-        verifyHttp(server).once(
-                method(Method.POST),
-                uri(path),
-                withHeader("Content-Type", "text/plain; UTF-8"),
-                withHeader("Content-Length", "12"),
-                withPostBodyContaining("request body")
-        );
+        final Request request = server.requests().poll();
+        assertThat(request.headers(), hasEntry(is("Content-Type"), contains("text/plain; UTF-8")));
+        assertThat(request.headers(), hasEntry(is("Content-Length"), contains("12")));
+        assertThat(request.bodyAsString(), is("request body"));
     }
 
     @Test
     public void testDefaultContentTypeForUrlencodedForm() throws Exception {
         final String path = "/test-request-body";
 
-        final Request request = new Request(getUrl(path)).formParam("a_key", "a_val");
+        final Request req = new Request(getUrl(path)).formParam("a_key", "a_val");
 
-        Requests.post(request);
+        Requests.post(req);
 
-        verifyHttp(server).once(
-                method(Method.POST),
-                uri(path),
-                parameter("a_key", "a_val"),
-                withHeader("Content-Type", "application/x-www-form-urlencoded"),
-                withHeader("Content-Length", "11")
-        );
+        final Request request = server.requests().poll();
+        assertThat(request.headers(), hasEntry(is("Content-Type"), contains("application/x-www-form-urlencoded")));
+        assertThat(request.headers(), hasEntry(is("Content-Length"), contains("11")));
+        assertThat(request.bodyAsString(), is("a_key=a_val"));
     }
 
     @Test
     public void testRequestBodyOverridesFormParams() throws Exception {
         final String path = "/test-request-body";
 
-        final Request request = new Request(getUrl(path)).formParam("param1", 1)
-                                                         .body("request body")
-                                                         .formParam("param2", 2)
-                                                         .header("Content-Type", "text/plain");
+        final Request req = new Request(getUrl(path)).formParam("param1", 1)
+                                                     .body("request body")
+                                                     .formParam("param2", 2)
+                                                     .header("Content-Type", "text/plain");
 
-        System.out.println(request);
-        Requests.post(request);
+        Requests.post(req);
 
-        verifyHttp(server).once(
-                method(Method.POST),
-                uri(path),
-                withPostBodyContaining("request body")
-        );
+        final Request request = server.requests().poll();
+        assertThat(request.headers(), hasEntry(is("Content-Type"), contains("text/plain")));
+        assertThat(request.headers(), hasEntry(is("Content-Length"), contains("12")));
+        assertThat(request.bodyAsString(), is("request body"));
     }
 
     @Test
@@ -208,16 +191,11 @@ public class RequestConstructingTest extends RequestsTest {
     public void testUserAgent() throws Exception {
         final String path = "/test-user-agent";
 
-        Request r = new Request(getUrl(path)).header("User-Agent", "Custom User Agent");
-        Requests.get(r);
+        Request req = new Request(getUrl(path)).header("User-Agent", "Custom User Agent");
+        Requests.get(req);
 
-        server.getCalls().forEach(it -> System.out.println(it.getHeaders()));
-
-        verifyHttp(server).once(
-                method(Method.GET),
-                uri(path),
-                withHeader("User-Agent", "Custom User Agent")
-        );
+        final Request request = server.requests().poll();
+        assertThat(request.headers(), hasEntry(is("User-Agent"), contains("Custom User Agent")));
     }
 
     @Test
@@ -226,24 +204,18 @@ public class RequestConstructingTest extends RequestsTest {
 
         Requests.get(getUrl(path));
 
-        verifyHttp(server).once(
-                method(Method.GET),
-                uri(path),
-                withHeader("User-Agent", "Java-Requests/0.0.1")
-        );
+        final Request request = server.requests().poll();
+        assertThat(request.headers(), hasEntry(is("User-Agent"), contains("Java-Requests/0.0.1")));
     }
 
     @Test
     public void testPath() throws Exception {
-        Request r = new Request(getUrl("")).path("test")
-                                           .path("composite")
-                                           .path("path");
-        Requests.get(r);
+        Request req = new Request(getUrl("")).path("test")
+                                             .path("composite")
+                                             .path("path");
+        Requests.get(req);
 
-        verifyHttp(server).once(
-                method(Method.GET),
-                uri("/test/composite/path"),
-                withHeader("User-Agent", "Java-Requests/0.0.1")
-        );
+        final Request request1 = server.requests().poll();
+        assertThat(request1.path(), is("/test/composite/path"));
     }
 }
