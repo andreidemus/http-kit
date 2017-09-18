@@ -4,6 +4,9 @@ Contains:
 - Requests (a very basic Java HTTP client for humans, inspired by Python's [Requests](http://docs.python-requests.org/en/master/) library.)
 - Responses (a very basic Java HTTP server for http clients testing and debugging)
 
+**Library is not stable yet, please, use with care**
+
+
 ## Requests
 
 
