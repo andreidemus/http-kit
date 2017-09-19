@@ -7,6 +7,17 @@ Contains:
 **Library is not stable yet, please, use with care**
 
 
+### Maven dependency
+```
+<dependency>
+    <groupId>com.andreidemus.http-kit</groupId>
+    <artifactId>http-kit</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
+
+
+
 ## Requests
 
 
