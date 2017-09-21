@@ -194,6 +194,7 @@ public class Responses {
     }
 
     private ServerSocket openSocket(int port) {
+        System.out.println("Trying to start server on port " + port);
         try {
             return new ServerSocket(port);
         } catch (IOException e) {

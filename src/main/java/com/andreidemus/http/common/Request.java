@@ -275,6 +275,10 @@ public class Request {
             sb.append("\nBody:\n")
               .append(bodyAsString());
         }
+        if (hasFormParams()) {
+            sb.append("\nBody:\n")
+              .append(formParamsAsString());
+        }
 
         return sb.toString();
     }
