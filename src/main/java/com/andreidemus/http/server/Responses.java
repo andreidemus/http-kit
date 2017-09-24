@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ public class Responses {
             "\n" +
             "This is response body");
     private int port;
+    private ServerSocket socket;
 
     public Responses() {
         numThreads = 5;
@@ -39,11 +41,10 @@ public class Responses {
     }
 
     public int start(int port) throws IOException {
-        final ServerSocket socket = openSocket(port);
+        socket = openSocket(port);
         System.out.println("Started server on port " + socket.getLocalPort()); // TODO use logger
-
         mainExecutor.submit(() -> {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
                     handleConnection(socket.accept());
                 } catch (IOException e) {
@@ -59,7 +60,23 @@ public class Responses {
 
 
     public void stop() {
-        throw new RuntimeException("Not implemented."); // TODO implement
+        System.out.println("Server is shutting down...");
+        mainExecutor.shutdownNow();
+        requestsExecutor.shutdown();
+
+        System.out.println("Closing socket...");
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("Waiting for handlers termination...");
+        try {
+            requestsExecutor.awaitTermination(3, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     public Queue<Request> requests() {
@@ -194,15 +211,11 @@ public class Responses {
     }
 
     private ServerSocket openSocket(int port) {
-        System.out.println("Trying to start server on port " + port);
+        System.out.println("Trying to start server on port " + port); // TODO use logger
         try {
             return new ServerSocket(port);
         } catch (IOException e) {
             return openSocket(port + 1);
         }
-    }
-
-    public static void main(String[] args) throws IOException, InterruptedException {
-        new Responses().start();
     }
 }
